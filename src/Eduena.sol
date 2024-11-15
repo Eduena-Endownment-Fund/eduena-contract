@@ -22,7 +22,7 @@ contract Eduena is ERC20, ReentrancyGuard {
     ISUSDe public sUSDe;
     IERC20 public USDe;
     uint256 public lastAssetValueInUSDe;
-    uint256 public totalUnclaimedYield;
+    uint256 public totalUnclaimedYieldInUSDe;
 
     event Deposit(address indexed donor, uint256 amount);
     event Stake(uint256 amount);
@@ -40,10 +40,20 @@ contract Eduena is ERC20, ReentrancyGuard {
 
         USDe.safeTransferFrom(msg.sender, address(this), amount);
         uint256 shares = _calculateShares(amount);
+        _stake(amount);
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, amount);
-        _stake(amount);
-        updateYield();
+        
+        if (lastAssetValueInUSDe == 0) {
+            lastAssetValueInUSDe = sUSDe.previewRedeem(sUSDe.balanceOf(address(this)));
+        } 
+
+        if (lastAssetValueInUSDe > 0) {
+            uint256 yield = sUSDe.previewRedeem(sUSDe.balanceOf(address(this))) - lastAssetValueInUSDe;
+            totalUnclaimedYieldInUSDe += yield;
+            _mint(address(this), _calculateShares(yield));
+            emit YieldUpdated(sUSDe.previewRedeem(sUSDe.balanceOf(address(this))), yield);
+        }
     }
 
     function _stake(uint256 amount) internal {
@@ -88,21 +98,9 @@ contract Eduena is ERC20, ReentrancyGuard {
 
     //FIXME: Fix the logic of this function
     function updateYield() public {
-        uint256 sUSDeBalance = sUSDe.balanceOf(address(this));
-        uint256 assetValueInUSDe = sUSDe.previewMint(sUSDeBalance);
+        if (totalSupply() == 0) {
 
-        if (lastAssetValueInUSDe == 0) {
-            lastAssetValueInUSDe = sUSDe.balanceOf(address(this));
-        }
-
-        if (lastAssetValueInUSDe > 0) {
-            uint256 yield = assetValueInUSDe - lastAssetValueInUSDe;
-            uint256 shares = _calculateShares(yield);
-            _mint(address(this), shares);
-
-            totalUnclaimedYield += yield;
-            emit YieldUpdated(assetValueInUSDe, yield);
-        }
+        } 
     }
 
     function _calculateShares(uint256 amount) internal view returns (uint256) {

@@ -2,21 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-<<<<<<< HEAD:test/EduenaEndowmentFund.t.sol
-import "../src/EduenaEndowmentFund.sol";
-import "../src/mocks/MockUSDe.sol";
-import "../src/mocks/MockSUSDe.sol";
-
-contract EduEnaTest is Test {
-    EduenaEndowmentFund eduEna;
-=======
 import "../src/Eduena.sol";
 import "../src/mocks/MockUSDe.sol";
 import "../src/mocks/MockSUSDe.sol";
 
 contract EduenaTest is Test {
     Eduena eduena;
->>>>>>> 4b30c345441797450fe8e0b261c4a8ea4ce086fd:test/EduEna.t.sol
     MockUSDe USDe;
     MockSUSDe sUSDe;
     address owner;
@@ -30,11 +21,7 @@ contract EduenaTest is Test {
 
         USDe = new MockUSDe();
         sUSDe = new MockSUSDe(USDe);
-<<<<<<< HEAD:test/EduenaEndowmentFund.t.sol
-        eduEna = new EduenaEndowmentFund(address(USDe), address(sUSDe));
-=======
         eduena = new Eduena(address(USDe), address(sUSDe));
->>>>>>> 4b30c345441797450fe8e0b261c4a8ea4ce086fd:test/EduEna.t.sol
 
         USDe.mint(donor, 1000 ether);
         USDe.mint(donor2, 1000 ether);
