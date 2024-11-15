@@ -39,7 +39,7 @@ contract EduenaEndowmentFund is ReentrancyGuard {
     function poolBalance() public view returns (uint256) {
         return USDe.balanceOf(address(this));
     }
-
+    
     function deposit(uint256 amount) external nonReentrant {
         if (amount == 0) revert DepositAmountZero();
 
@@ -77,7 +77,7 @@ contract EduenaEndowmentFund is ReentrancyGuard {
         totalShares -= shares;
 
         //FIXME: Fix the withdraw to the donor as a sUSDe
-        sUSDe.redeem(shares, msg.sender, address(this));
+        sUSDe.transfer(shares, msg.sender, address(this));
         emit Withdraw(msg.sender, previewAmount);
         updateYield();
     }
@@ -106,8 +106,11 @@ contract EduenaEndowmentFund is ReentrancyGuard {
 
         uint256 assetValueInUSDe = sUSDe.previewDeposit(sUSDeBalance);
         lastAssetValueInUSDe = assetValueInUSDe;
-
         uint256 yield = assetValueInUSDe - lastAssetValueInUSDe;
+        uint256 shares = (yield * totalShares) / lastAssetValueInUSDe;
+
+        _mint(address(this), shares);
+
         totalUnclaimedYield += yield;
         emit YieldUpdated(assetValueInUSDe, yield);
     }

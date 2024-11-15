@@ -6,8 +6,8 @@ import "../src/EduEna.sol";
 import "../src/mocks/MockUSDe.sol";
 import "../src/mocks/MockSUSDe.sol";
 
-contract EduEnaTest is Test {
-    EduEna eduEna;
+contract EduenaEndowmentFundTest is Test {
+    EduenaEndowmentFund eduEna;
     MockUSDe USDe;
     MockSUSDe sUSDe;
     address owner;
@@ -19,7 +19,7 @@ contract EduEnaTest is Test {
 
         USDe = new MockUSDe();
         sUSDe = new MockSUSDe(USDe);
-        eduEna = new EduEna(address(USDe), address(sUSDe));
+        eduEna = new EduenaEndowmentFund(address(USDe), address(sUSDe));
 
         USDe.mint(donor, 1000 ether);
     }
