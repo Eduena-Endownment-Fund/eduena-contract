@@ -21,7 +21,8 @@ interface ISUSDe {
     ) external returns (uint256);
 
     function previewRedeem(uint256 shares) external view returns (uint256);
-    function previewDeposit(uint256 assets) external view returns (uint256);
+    
+    function previewMint(uint256 shares) external view returns (uint256);
 
     function balanceOf(address account) external view returns (uint256);
 }

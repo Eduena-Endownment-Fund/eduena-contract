@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -14,7 +15,7 @@ error OnlyOwner();
 error DepositAmountZero();
 error InsufficientYield();
 
-contract EduenaEndowmentFund is ReentrancyGuard {
+contract EduenaEndowmentFund is ReentrancyGuard, ERC20 {
     using SafeERC20 for IERC20;
 
     address public owner;
