@@ -3,12 +3,13 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/Eduena.sol";
+import "../src/interfaces/ISUSDe.sol";
 import "../src/mocks/MockUSDe.sol";
 import "../src/mocks/MockSUSDe.sol";
 
 contract EduenaTest is Test {
-    ERC20 usde;
-    ERC4626 susde;
+    IERC20 usde;
+    ISUSDe susde;
     address usdeAddress = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address susdeAddress = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     Eduena eduena;
@@ -18,8 +19,8 @@ contract EduenaTest is Test {
         uint256 blockNumber = vm.envUint("FORK_BLOCK_NUMBER");
 
         vm.createSelectFork(rpcUrl, blockNumber);
-        usde = ERC20(usdeAddress);
-        susde = ERC4626(susdeAddress);
+        usde = IERC20(usdeAddress);
+        susde = ISUSDe(susdeAddress);
         eduena = new Eduena(address(usde), address(susde));
     }
 
@@ -41,10 +42,11 @@ contract EduenaTest is Test {
         assertEq(eduena.totalSupply(), amount);
         assertEq(eduena.totalUnclaimedYieldInUSDe(), 0);
 
-        uint256 newUsd = susde.totalAssets() + 10000000 ether;
-        // console.log(newUsd);
+        console.log(susde.totalAssets());
 
-        deal(address(susde), newUsd);
+        vm.makePersistent(address(eduena));
+
+        vm.rollFork(21185274);
 
         address user2 = address(0x123);
         deal(address(usde), user2, amount);
@@ -53,11 +55,7 @@ contract EduenaTest is Test {
         eduena.deposit(amount);
         vm.stopPrank();
 
-        // console.log(susde.totalAssets());
-
-        // console.log(susde.totalAssets());
-
-        // susde.mint(100 ether, address(susde));
+        console.log(susde.totalAssets());
     }
 
     function testWithdraw() public {}
