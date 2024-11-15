@@ -7,4 +7,8 @@ contract MockSUSDe is ERC4626 {
     constructor(
         ERC20 _usdeToken
     ) ERC4626(_usdeToken) ERC20("Mock Staked USDe", "MSUSDe") {}
+
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
 }
