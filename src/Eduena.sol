@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -19,7 +20,7 @@ contract Eduena is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address public owner;
-    ISUSDe public sUSDe;
+    IERC4626 public sUSDe;
     IERC20 public USDe;
     uint256 public lastAssetValueInUSDe;
     uint256 public totalUnclaimedYield;
@@ -32,7 +33,7 @@ contract Eduena is ERC20, ReentrancyGuard {
     constructor(address _USDe, address _sUSDe) ERC20("Eduena", "EDN") {
         owner = msg.sender;
         USDe = IERC20(_USDe);
-        sUSDe = ISUSDe(_sUSDe);
+        sUSDe = IERC4626(_sUSDe);
     }
 
     function deposit(uint256 amount) external nonReentrant {
@@ -43,7 +44,7 @@ contract Eduena is ERC20, ReentrancyGuard {
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, amount);
         _stake(amount);
-        updateYield();
+        // updateYield();
     }
 
     function _stake(uint256 amount) internal {
