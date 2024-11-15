@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../src/EduEna.sol";
+import "../src/EduenaEndowmentFund.sol";
 import "../src/mocks/MockUSDe.sol";
 import "../src/mocks/MockSUSDe.sol";
 
-contract EduenaEndowmentFundTest is Test {
+contract EduEnaTest is Test {
     EduenaEndowmentFund eduEna;
     MockUSDe USDe;
     MockSUSDe sUSDe;
