@@ -28,7 +28,6 @@ contract EduenaTest is Test {
         uint256 amount = 100 ether;
 
         deal(address(usde), user, amount);
-
         vm.startPrank(user);
         usde.approve(address(eduena), amount);
         eduena.deposit(amount);
@@ -40,7 +39,25 @@ contract EduenaTest is Test {
         assertEq(usde.balanceOf(user), 0);
         assertEq(finalSusdeBalance, susde.previewDeposit(amount));
         assertEq(eduena.totalSupply(), amount);
-        // assert last asset, assert last yield
+        assertEq(eduena.totalUnclaimedYieldInUSDe(), 0);
+
+        uint256 newUsd = susde.totalAssets() + 10000000 ether;
+        // console.log(newUsd);
+
+        deal(address(susde), newUsd);
+
+        address user2 = address(0x123);
+        deal(address(usde), user2, amount);
+        vm.startPrank(user2);
+        usde.approve(address(eduena), amount);
+        eduena.deposit(amount);
+        vm.stopPrank();
+
+        // console.log(susde.totalAssets());
+
+        // console.log(susde.totalAssets());
+
+        // susde.mint(100 ether, address(susde));
     }
 
     function testWithdraw() public {}
