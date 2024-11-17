@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./interfaces/IUSDe.sol";
+import "./interfaces/ISUSDe.sol";
 import "forge-std/console.sol"; //NOTE: testing only
 
 error InsufficientBalance();
@@ -51,6 +51,9 @@ contract Eduena is ERC20, ReentrancyGuard {
         if (lastAssetValueInUSDe > 0) {
             uint256 yield = sUSDe.previewRedeem(sUSDe.balanceOf(address(this))) - lastAssetValueInUSDe;
             totalUnclaimedYieldInUSDe += yield;
+
+            console.log(totalUnclaimedYieldInUSDe);
+
             _mint(address(this), _calculateShares(yield));
             emit YieldUpdated(sUSDe.previewRedeem(sUSDe.balanceOf(address(this))), yield);
         }
@@ -84,7 +87,7 @@ contract Eduena is ERC20, ReentrancyGuard {
         bool isEligible = checkEligibility(recipient);
         if (!isEligible) revert NotEligibleForScholarship();
 
-        if (amount > totalUnclaimedYield) revert ExceedsUnclaimedYield();
+        if (amount > totalUnclaimedYieldInUSDe) revert ExceedsUnclaimedYield();
 
         uint256 sUSDeBalance = sUSDe.balanceOf(address(this));
         if (amount > sUSDeBalance) revert InsufficientBalance();
@@ -98,9 +101,7 @@ contract Eduena is ERC20, ReentrancyGuard {
 
     //FIXME: Fix the logic of this function
     function updateYield() public {
-        if (totalSupply() == 0) {
-
-        } 
+        //WIP
     }
 
     function _calculateShares(uint256 amount) internal view returns (uint256) {

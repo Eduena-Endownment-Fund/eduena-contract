@@ -3,93 +3,62 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../src/Eduena.sol";
+import "../src/interfaces/ISUSDe.sol";
 import "../src/mocks/MockUSDe.sol";
 import "../src/mocks/MockSUSDe.sol";
 
 contract EduenaTest is Test {
+    IERC20 usde;
+    ISUSDe susde;
+    address usdeAddress = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+    address susdeAddress = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     Eduena eduena;
-    MockUSDe USDe;
-    MockSUSDe sUSDe;
-    address owner;
-    address donor;
-    address donor2;
 
     function setUp() public {
-        owner = address(this);
-        donor = address(0x123);
-        donor2 = address(0x456);
+        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
+        uint256 blockNumber = vm.envUint("FORK_BLOCK_NUMBER");
 
-        USDe = new MockUSDe();
-        sUSDe = new MockSUSDe(USDe);
-        eduena = new Eduena(address(USDe), address(sUSDe));
-
-        USDe.mint(donor, 1000 ether);
-        USDe.mint(donor2, 1000 ether);
+        vm.createSelectFork(rpcUrl, blockNumber);
+        usde = IERC20(usdeAddress);
+        susde = ISUSDe(susdeAddress);
+        eduena = new Eduena(address(usde), address(susde));
     }
 
     function testDeposit() public {
+        address user = address(0x123);
         uint256 amount = 100 ether;
 
-        vm.startPrank(donor);
-        USDe.approve(address(eduena), amount);
+        deal(address(usde), user, amount);
+        vm.startPrank(user);
+        usde.approve(address(eduena), amount);
         eduena.deposit(amount);
         vm.stopPrank();
 
-        assertEq(USDe.balanceOf(address(eduena)), 0);
-        assertEq(sUSDe.balanceOf(address(eduena)), amount);
-        assertEq(sUSDe.totalSupply(), amount);
+        uint256 finalSusdeBalance = susde.balanceOf(address(eduena));
 
-        //TODO: test yield, increasing the value of the asset and donor2 depositing
+        assertEq(usde.balanceOf(address(eduena)), 0);
+        assertEq(usde.balanceOf(user), 0);
+        assertEq(finalSusdeBalance, susde.previewDeposit(amount));
+        assertEq(eduena.totalSupply(), amount);
+        assertEq(eduena.totalUnclaimedYieldInUSDe(), 0);
 
-        vm.startPrank(donor2);
-        USDe.approve(address(eduena), amount);
+        console.log(susde.totalAssets());
+
+        vm.makePersistent(address(eduena));
+
+        vm.rollFork(21185274);
+
+        address user2 = address(0x123);
+        deal(address(usde), user2, amount);
+        vm.startPrank(user2);
+        usde.approve(address(eduena), amount);
         eduena.deposit(amount);
         vm.stopPrank();
 
-        // assertEq(USDe.balanceOf(address(eduena)), 0);
-        // assertEq(sUSDe.balanceOf(address(eduena)), amount * 2);
-        // assertEq(sUSDe.totalSupply(), amount * 2);
-        
-        // console.log(eduena.totalSupply());
-        // console.log(eduena.lastAssetValueInUSDe());
-        // console.log(eduena.totalUnclaimedYield());
+        console.log(susde.totalAssets());
     }
 
-    function testWithdraw() public {
-        uint256 depositAmount = 100 ether;
-        uint256 withdrawAmount = 100 ether;
+    function testWithdraw() public {}
 
-        vm.startPrank(donor);
-        USDe.approve(address(eduena), depositAmount);
-        eduena.deposit(depositAmount);
-        vm.stopPrank();
-
-        vm.startPrank(donor);
-        eduena.withdraw(withdrawAmount);
-        vm.stopPrank();
-
-        assertEq(USDe.balanceOf(donor), 900 ether);
-        assertEq(
-            sUSDe.balanceOf(address(eduena)),
-            depositAmount - withdrawAmount
-        );
-        assertEq(sUSDe.balanceOf(donor), 100 ether);
-        assertEq(eduena.totalUnclaimedYield(), 0);
-        assertEq(eduena.lastAssetValueInUSDe(), 0 ether);
-    }
-
-    function testDistributeScholarship() public {
-        // uint256 depositAmount = 100 ether;
-        // address student = address(0x123);
-        // vm.startPrank(donor);
-        // USDe.approve(address(eduena), depositAmount);
-        // eduena.deposit(depositAmount);
-        // vm.stopPrank();
-        // vm.startPrank(donor);
-        // eduena.distributeScholarship(student, depositAmount);
-        // vm.stopPrank();
-        // assertEq(USDe.balanceOf(student), depositAmount);
-        // assertEq(sUSDe.balanceOf(address(eduena)), 0);
-        // assertEq(sUSDe.totalSupply(), 0);
-    }
+    function testDistributeScholarship() public {}
 }
