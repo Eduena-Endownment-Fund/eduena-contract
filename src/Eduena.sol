@@ -39,12 +39,15 @@ contract Eduena is ERC20, ReentrancyGuard {
         if (amount == 0) revert DepositAmountZero();
 
         uint256 shares;
+
         if (totalSupply() == 0) {
             shares = amount;
-            lastAssetValueInUSDe = sUSDe.previewRedeem(sUSDe.balanceOf(address(this)));
+            lastAssetValueInUSDe = amount;
         } else {
             shares = (amount * totalSupply()) / lastAssetValueInUSDe;
+            lastAssetValueInUSDe += amount;
         }
+
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, amount);
 
@@ -58,18 +61,20 @@ contract Eduena is ERC20, ReentrancyGuard {
         emit Stake(amount);
     }
 
-    function withdraw(uint256 amount) external nonReentrant {
-        _withdraw(msg.sender, amount);
+    function withdraw(uint256 shares) external nonReentrant {
+        if (shares > balanceOf(msg.sender)) revert InsufficientBalance();
+
+        _withdraw(msg.sender, shares);
     }
 
-    function _withdraw(address recipient, uint256 amount) private {
-        uint256 shares = _calculateShares(amount);
-        uint256 previewAmount = sUSDe.previewRedeem(shares);
+    function _withdraw(address recipient, uint256 shares) private {
+        uint256 amount = (shares * sUSDe.balanceOf(address(this))) /
+            totalSupply();
 
-        _burn(msg.sender, shares);
+        _burn(recipient, shares);
         sUSDe.transfer(recipient, amount);
-        emit Withdraw(recipient, previewAmount);
-        updateYield();
+        emit Withdraw(msg.sender, amount);
+        // updateYield();
     }
 
     function distribute(
