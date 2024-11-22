@@ -50,15 +50,17 @@ contract EduenaTest is Test {
         eduena.deposit(amount);
         vm.stopPrank();
 
-        //test yield
+
+        console.log(susde.previewRedeem(1000), susde.totalAssets());
 
         address rewarder = address(0x456);
-        uint256 reward = 10000 ether;
-
-        deal(address(usde), rewarder, reward);
+        deal(address(usde), rewarder, 10000 ether);
         vm.startPrank(rewarder);
-        usde.transfer(address(susde), reward);
+        usde.transfer(susdeAddress, 10000 ether);
         vm.stopPrank();
+
+
+        console.log(susde.previewRedeem(1000), susde.totalAssets());
 
         amount = 1000;
 

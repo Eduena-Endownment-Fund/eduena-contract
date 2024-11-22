@@ -95,8 +95,8 @@ contract Eduena is ERC20, ReentrancyGuard {
         uint256 currentAssetValueInUSDe = sUSDe.previewRedeem(
             sUSDe.balanceOf(address(this))
         );
-        console.log(lastAssetValueInUSDe);
-        console.log(currentAssetValueInUSDe);
+        // console.log(lastAssetValueInUSDe);
+        // console.log(currentAssetValueInUSDe);
 
         if (currentAssetValueInUSDe < lastAssetValueInUSDe) {
             totalUnclaimedYieldInUSDe = 0;
