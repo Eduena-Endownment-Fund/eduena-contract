@@ -38,28 +38,18 @@ contract Eduena is ERC20, ReentrancyGuard {
     function deposit(uint256 amount) external nonReentrant {
         if (amount == 0) revert DepositAmountZero();
 
-       
-        uint256 shares = _calculateShares(amount);
-        
-        emit Deposit(msg.sender, amount);
-        
-        if (lastAssetValueInUSDe == 0) {
+        uint256 shares;
+        if (totalSupply() == 0) {
+            shares = amount;
             lastAssetValueInUSDe = sUSDe.previewRedeem(sUSDe.balanceOf(address(this)));
-        } 
-
-        if (lastAssetValueInUSDe > 0) {
-            uint256 yield = sUSDe.previewRedeem(sUSDe.balanceOf(address(this))) - lastAssetValueInUSDe;
-            totalUnclaimedYieldInUSDe += yield;
-
-            console.log(totalUnclaimedYieldInUSDe);
-
-            _mint(address(this), _calculateShares(yield));
-            console.log(_calculateShares(yield));
-            emit YieldUpdated(sUSDe.previewRedeem(sUSDe.balanceOf(address(this))), yield);
+        } else {
+            shares = (amount * totalSupply()) / lastAssetValueInUSDe;
         }
+        _mint(msg.sender, shares);
+        emit Deposit(msg.sender, amount);
+
         USDe.safeTransferFrom(msg.sender, address(this), amount);
         _stake(amount);
-        _mint(msg.sender, shares);
     }
 
     function _stake(uint256 amount) internal {
@@ -82,14 +72,10 @@ contract Eduena is ERC20, ReentrancyGuard {
         updateYield();
     }
 
-    // This function is a simulation to demonstrate the distribution of scholarships to students.
     function distribute(
         address recipient,
         uint256 amount
     ) external nonReentrant {
-        bool isEligible = checkEligibility(recipient);
-        if (!isEligible) revert NotEligibleForScholarship();
-
         if (amount > totalUnclaimedYieldInUSDe) revert ExceedsUnclaimedYield();
 
         uint256 sUSDeBalance = sUSDe.balanceOf(address(this));
@@ -98,13 +84,28 @@ contract Eduena is ERC20, ReentrancyGuard {
         _withdraw(recipient, amount);
     }
 
-    function checkEligibility(address student) internal pure returns (bool) {
-        return true;
-    }
-
     //FIXME: Fix the logic of this function
     function updateYield() public {
-        //WIP
+        if (lastAssetValueInUSDe == 0) {
+            lastAssetValueInUSDe = sUSDe.previewRedeem(
+                sUSDe.balanceOf(address(this))
+            );
+        }
+
+        if (lastAssetValueInUSDe > 0) {
+            uint256 yield = sUSDe.previewRedeem(
+                sUSDe.balanceOf(address(this))
+            ) - lastAssetValueInUSDe;
+            totalUnclaimedYieldInUSDe += yield;
+
+            console.log(totalUnclaimedYieldInUSDe);
+
+            _mint(address(this), _calculateShares(yield));
+            emit YieldUpdated(
+                sUSDe.previewRedeem(sUSDe.balanceOf(address(this))),
+                yield
+            );
+        }
     }
 
     function _calculateShares(uint256 amount) internal view returns (uint256) {
