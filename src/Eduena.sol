@@ -38,25 +38,12 @@ contract Eduena is ERC20, ReentrancyGuard {
     function deposit(uint256 amount) external nonReentrant {
         if (amount == 0) revert DepositAmountZero();
 
-        USDe.safeTransferFrom(msg.sender, address(this), amount);
         uint256 shares = _calculateShares(amount);
-        _stake(amount);
         _mint(msg.sender, shares);
         emit Deposit(msg.sender, amount);
-        
-        if (lastAssetValueInUSDe == 0) {
-            lastAssetValueInUSDe = sUSDe.previewRedeem(sUSDe.balanceOf(address(this)));
-        } 
 
-        if (lastAssetValueInUSDe > 0) {
-            uint256 yield = sUSDe.previewRedeem(sUSDe.balanceOf(address(this))) - lastAssetValueInUSDe;
-            totalUnclaimedYieldInUSDe += yield;
-
-            console.log(totalUnclaimedYieldInUSDe);
-
-            _mint(address(this), _calculateShares(yield));
-            emit YieldUpdated(sUSDe.previewRedeem(sUSDe.balanceOf(address(this))), yield);
-        }
+        USDe.safeTransferFrom(msg.sender, address(this), amount);
+        _stake(amount);
     }
 
     function _stake(uint256 amount) internal {
@@ -79,14 +66,10 @@ contract Eduena is ERC20, ReentrancyGuard {
         updateYield();
     }
 
-    // This function is a simulation to demonstrate the distribution of scholarships to students.
     function distribute(
         address recipient,
         uint256 amount
     ) external nonReentrant {
-        bool isEligible = checkEligibility(recipient);
-        if (!isEligible) revert NotEligibleForScholarship();
-
         if (amount > totalUnclaimedYieldInUSDe) revert ExceedsUnclaimedYield();
 
         uint256 sUSDeBalance = sUSDe.balanceOf(address(this));
@@ -95,13 +78,28 @@ contract Eduena is ERC20, ReentrancyGuard {
         _withdraw(recipient, amount);
     }
 
-    function checkEligibility(address student) internal pure returns (bool) {
-        return true;
-    }
-
     //FIXME: Fix the logic of this function
     function updateYield() public {
-        //WIP
+        if (lastAssetValueInUSDe == 0) {
+            lastAssetValueInUSDe = sUSDe.previewRedeem(
+                sUSDe.balanceOf(address(this))
+            );
+        }
+
+        if (lastAssetValueInUSDe > 0) {
+            uint256 yield = sUSDe.previewRedeem(
+                sUSDe.balanceOf(address(this))
+            ) - lastAssetValueInUSDe;
+            totalUnclaimedYieldInUSDe += yield;
+
+            console.log(totalUnclaimedYieldInUSDe);
+
+            _mint(address(this), _calculateShares(yield));
+            emit YieldUpdated(
+                sUSDe.previewRedeem(sUSDe.balanceOf(address(this))),
+                yield
+            );
+        }
     }
 
     function _calculateShares(uint256 amount) internal view returns (uint256) {
