@@ -53,6 +53,7 @@ contract Eduena is ERC20, ReentrancyGuard {
 
         USDe.safeTransferFrom(msg.sender, address(this), amount);
         _stake(amount);
+        updateYield();
     }
 
     function _stake(uint256 amount) internal {
@@ -74,7 +75,7 @@ contract Eduena is ERC20, ReentrancyGuard {
         _burn(recipient, shares);
         sUSDe.transfer(recipient, amount);
         emit Withdraw(msg.sender, amount);
-        // updateYield();
+        updateYield();
     }
 
     function distribute(
@@ -90,20 +91,18 @@ contract Eduena is ERC20, ReentrancyGuard {
     }
 
     //FIXME: Fix the logic of this function
-    function updateYield() public {
-        if (lastAssetValueInUSDe == 0) {
-            lastAssetValueInUSDe = sUSDe.previewRedeem(
-                sUSDe.balanceOf(address(this))
-            );
-        }
+    function updateYield() private {
+        uint256 currentAssetValueInUSDe = sUSDe.previewRedeem(
+            sUSDe.balanceOf(address(this))
+        );
+        console.log(lastAssetValueInUSDe);
+        console.log(currentAssetValueInUSDe);
 
-        if (lastAssetValueInUSDe > 0) {
-            uint256 yield = sUSDe.previewRedeem(
-                sUSDe.balanceOf(address(this))
-            ) - lastAssetValueInUSDe;
+        if (currentAssetValueInUSDe < lastAssetValueInUSDe) {
+            totalUnclaimedYieldInUSDe = 0;
+        } else {
+            uint256 yield = currentAssetValueInUSDe - lastAssetValueInUSDe;
             totalUnclaimedYieldInUSDe += yield;
-
-            console.log(totalUnclaimedYieldInUSDe);
 
             _mint(address(this), _calculateShares(yield));
             emit YieldUpdated(

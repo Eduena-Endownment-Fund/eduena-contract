@@ -50,6 +50,16 @@ contract EduenaTest is Test {
         eduena.deposit(amount);
         vm.stopPrank();
 
+        //test yield
+
+        address rewarder = address(0x456);
+        uint256 reward = 10000 ether;
+
+        deal(address(usde), rewarder, reward);
+        vm.startPrank(rewarder);
+        usde.transfer(address(susde), reward);
+        vm.stopPrank();
+
         amount = 1000;
 
         deal(address(usde), user, amount);
@@ -57,7 +67,6 @@ contract EduenaTest is Test {
         usde.approve(address(eduena), amount);
         eduena.deposit(amount);
         vm.stopPrank();
-
     }
 
     function testWithdraw() public {
@@ -74,7 +83,7 @@ contract EduenaTest is Test {
         vm.startPrank(user);
         eduena.withdraw(withdrawAmount);
         vm.stopPrank();
-        
+
         assertEq(usde.balanceOf(user), 0);
         assertEq(eduena.totalSupply(), 0);
         assertEq(susde.balanceOf(address(eduena)), 0);
