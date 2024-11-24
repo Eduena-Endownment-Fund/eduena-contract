@@ -91,6 +91,4 @@ contract EduenaTest is Test {
         assertEq(susde.balanceOf(address(eduena)), 0);
         assertEq(susde.balanceOf(user), 896);
     }
-
-    function testDistributeScholarship() public {}
 }

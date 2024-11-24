@@ -30,7 +30,6 @@ The `Eduena` smart contract is an ERC20 token that allows users to deposit and w
 - **DepositAmountZero()**: Thrown when a deposit amount is zero.
 - **InsufficientYield()**: Thrown when there is insufficient yield.
 - **ExceedsUnclaimedYield()**: Thrown when the amount exceeds the unclaimed yield.
-- **NotEligibleForScholarship()**: Thrown when a user is not eligible for a scholarship.
 
 #### Testing
 
@@ -45,6 +44,3 @@ function testWithdraw() public {
     // Test withdraw functionality
 }
 
-function testDistributeScholarship() public {
-    // Test distribute scholarship functionality
-}
