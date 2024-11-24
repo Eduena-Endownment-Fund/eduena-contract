@@ -1,66 +1,46 @@
-## Foundry
+## Eduena Smart Contract
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+The `Eduena` smart contract is an ERC20 token that allows users to deposit and withdraw USDe tokens, stake them to earn yield, and distribute yield. It includes the following key functions:
 
-Foundry consists of:
+### Smart Contract Functionality
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+#### Functions
 
-## Documentation
+- **deposit(uint256 amount)**: Allows users to deposit a specified amount of USDe tokens. The equivalent amount of Eduena tokens (EDN) is minted and assigned to the user.
+- **withdraw(uint256 shares)**: Allows users to withdraw a specified amount of Eduena tokens (EDN). The equivalent amount of USDe tokens is transferred back to the user.
+- **distribute(address recipient, uint256 amount)**: Distributes a specified amount of yield to a recipient.
+- **updateYield()**: Updates the yield based on the current asset value in USDe.
 
-https://book.getfoundry.sh/
+#### Events
 
-## Usage
+- **Deposit(address indexed donor, uint256 amount)**: Emitted when a deposit is made.
+- **Stake(uint256 amount)**: Emitted when tokens are staked.
+- **Withdraw(address indexed recipient, uint256 amount)**: Emitted when a withdrawal is made.
+- **YieldUpdated(uint256 newAssetValueInUSDe, uint256 yield)**: Emitted when the yield is updated.
 
-### Build
+#### Errors
 
-```shell
-$ forge build
-```
+- **InsufficientBalance()**: Thrown when a user tries to withdraw more than their balance.
+- **OnlyOwner()**: Thrown when a non-owner tries to perform an owner-only action.
+- **DepositAmountZero()**: Thrown when a deposit amount is zero.
+- **InsufficientYield()**: Thrown when there is insufficient yield.
+- **ExceedsUnclaimedYield()**: Thrown when the amount exceeds the unclaimed yield.
+- **NotEligibleForScholarship()**: Thrown when a user is not eligible for a scholarship.
 
-### Test
+### Testing
 
-```shell
-$ forge test
-```
+The `EduenaTest` contract in `test/Eduena.t.sol` includes tests for the deposit and withdrawal functionalities.
 
-### Format
+```solidity
+function testDeposit() public {
+    // Test deposit functionality
+}
 
-```shell
-$ forge fmt
-```
+function testWithdraw() public {
+    // Test withdraw functionality
+}
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+function testDistributeScholarship() public {
+    // Test distribute scholarship functionality
+}
 ```
