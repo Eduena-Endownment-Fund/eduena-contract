@@ -8,10 +8,10 @@ The `Eduena` contract in [`src/Eduena.sol`](src/Eduena.sol)
 
 ### Functions
 
-- **deposit(uint256 amount)**: Allows users to deposit a specified amount of USDe tokens and it immediately staked to sUSDe. The equivalent amount of Eduena tokens (EDN) is minted and assigned to the user.
-- **withdraw(uint256 shares)**: Allows users to withdraw a specified amount of Eduena tokens (EDN). The equivalent amount of sUSDe tokens is transferred back to the user.
+- **deposit(uint256 amount)**: Allows users to deposit a specified amount of **USDe** tokens and it immediately staked to **sUSDe**. The equivalent amount of Eduena tokens (EDN) is minted and assigned to the user.
+- **withdraw(uint256 shares)**: Allows users to withdraw a specified amount of Eduena tokens (EDN). The equivalent amount of **sUSDe** tokens is transferred back to the user.
 - **distribute(address recipient, uint256 shares)**: Distributes a specified amount of yield to a recipient.
-- **accrueYield()**: Updates the yield based on the current asset value in USDe.
+- **accrueYield()**: Updates the yield based on the current asset value in **USDe**.
 
 ### Events
 
@@ -61,6 +61,29 @@ forge test
 ### Deployment
 
 The Eduena contract is deployed on [Tenderly](https://tenderly.co/) for testing purposes.
+
+### Setting Up RPC for Virtual Testnet
+
+To interact with the Eduena contract on the virtual testnet, you need to configure the RPC settings in your wallet or MetaMask.
+
+#### MetaMask Configuration
+
+1. Open MetaMask and go to the network dropdown at the top.
+2. Select "Add Network" and fill in the following details:
+
+   - **Network Name**: Tenderly
+   - **New RPC URL**: `https://virtual.mainnet.rpc.tenderly.co/7f501e58-b80d-4397-9031-146391be0952`
+   - **Chain ID**: `1` (or the appropriate chain ID for your testnet)
+   - **Currency Symbol**: `ETH`
+   - **Block Explorer URL**: (optional) `https://explorer.tenderly.co`
+
+3. Click "Save" to add the network.
+
+#### Wallet Configuration
+
+If you are using a different wallet, refer to its documentation for adding a custom RPC network. Use the same details as provided above for MetaMask.
+
+Once configured, you can connect your wallet to the Eduena testnet and interact with the deployed contract.
 
 #### Fund account
 
