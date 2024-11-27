@@ -6,14 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ISUSDe.sol";
-import "forge-std/console.sol"; //NOTE: testing only
 
 error InsufficientBalance();
-error OnlyOwner();
 error DepositAmountZero();
-error InsufficientYield();
 error ExceedsUnclaimedYield();
-error NotEligibleForScholarship();
 
 contract Eduena is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -24,99 +20,124 @@ contract Eduena is ERC20, ReentrancyGuard {
     uint256 public lastAssetValueInUSDe;
     uint256 public totalUnclaimedYieldInUSDe;
 
-    event Deposit(address indexed donor, uint256 amount);
-    event Stake(uint256 amount);
+    event DepositAndStake(address indexed user, uint256 amount);
     event Withdraw(address indexed recipient, uint256 amount);
-    event YieldUpdated(uint256 newAssetValueInUSDe, uint256 yield);
+    event Distribute(address indexed recipient, uint256 amount);
+    event YieldAccrued(uint256 newAssetValueInUSDe, uint256 yield);
 
+    /**
+     * @dev Constructor to initialize the contract with USDe and sUSDe token addresses.
+     * @param _USDe Address of the USDe token contract.
+     * @param _sUSDe Address of the sUSDe token contract.
+     */
     constructor(address _USDe, address _sUSDe) ERC20("Eduena", "EDN") {
         owner = msg.sender;
         USDe = IERC20(_USDe);
         sUSDe = ISUSDe(_sUSDe);
     }
 
+    /**
+     * @dev Deposits USDe tokens into the contract, stakes them into sUSDe, and mints corresponding shares.
+     * @param amount Amount of USDe tokens to deposit.
+     */
     function deposit(uint256 amount) external nonReentrant {
+        accrueYield();
+
         if (amount == 0) revert DepositAmountZero();
 
         uint256 shares;
 
         if (totalSupply() == 0) {
-            shares = amount;
-            lastAssetValueInUSDe = amount;
+            shares = sUSDe.previewRedeem(sUSDe.previewDeposit(amount));
+            lastAssetValueInUSDe = sUSDe.previewRedeem(
+                sUSDe.previewDeposit(amount)
+            );
         } else {
+            lastAssetValueInUSDe = sUSDe.previewRedeem(
+                sUSDe.balanceOf(address(this))
+            );
             shares = (amount * totalSupply()) / lastAssetValueInUSDe;
-            lastAssetValueInUSDe += amount;
+            lastAssetValueInUSDe += sUSDe.previewRedeem(
+                sUSDe.previewDeposit(amount)
+            );
         }
 
         _mint(msg.sender, shares);
-        emit Deposit(msg.sender, amount);
 
         USDe.safeTransferFrom(msg.sender, address(this), amount);
-        _stake(amount);
-        updateYield();
-    }
 
-    function _stake(uint256 amount) internal {
         USDe.approve(address(sUSDe), amount);
         sUSDe.deposit(amount, address(this));
-        emit Stake(amount);
+
+        emit DepositAndStake(msg.sender, amount);
     }
 
+    /**
+     * @dev Withdraws shares from the contract and transfers corresponding USDe tokens to the user.
+     * @param shares Amount of shares to withdraw.
+     */
     function withdraw(uint256 shares) external nonReentrant {
+        accrueYield();
+
         if (shares > balanceOf(msg.sender)) revert InsufficientBalance();
 
-        _withdraw(msg.sender, shares);
-    }
-
-    function _withdraw(address recipient, uint256 shares) private {
         uint256 amount = (shares * sUSDe.balanceOf(address(this))) /
             totalSupply();
+        lastAssetValueInUSDe -= sUSDe.previewRedeem(
+            sUSDe.previewWithdraw(amount)
+        );
 
-        _burn(recipient, shares);
-        sUSDe.transfer(recipient, amount);
+        _burn(msg.sender, shares);
+        sUSDe.transfer(msg.sender, amount);
         emit Withdraw(msg.sender, amount);
-        updateYield();
     }
 
+    /**
+     * @dev Distributes yield to a recipient by burning shares and transferring sUSDe tokens.
+     * @param recipient Address of the recipient.
+     * @param shares Amount of shares to distribute.
+     */
     function distribute(
         address recipient,
-        uint256 amount
+        uint256 shares
     ) external nonReentrant {
-        if (amount > totalUnclaimedYieldInUSDe) revert ExceedsUnclaimedYield();
+        accrueYield();
 
-        uint256 sUSDeBalance = sUSDe.balanceOf(address(this));
-        if (amount > sUSDeBalance) revert InsufficientBalance();
+        if (shares > totalUnclaimedYieldInUSDe) revert ExceedsUnclaimedYield();
 
-        _withdraw(recipient, amount);
+        uint256 amount = (shares * sUSDe.balanceOf(address(this))) /
+            totalSupply();
+        totalUnclaimedYieldInUSDe -= shares;
+
+        _burn(address(this), shares);
+
+        sUSDe.transfer(recipient, amount);
+        emit Distribute(msg.sender, amount);
     }
 
-    //FIXME: Fix the logic of this function
-    function updateYield() private {
+    /**
+     * @dev Accrues yield by calculating the difference in asset value and minting new shares.
+     */
+    function accrueYield() public {
         uint256 currentAssetValueInUSDe = sUSDe.previewRedeem(
             sUSDe.balanceOf(address(this))
         );
-        // console.log(lastAssetValueInUSDe);
-        // console.log(currentAssetValueInUSDe);
 
-        if (currentAssetValueInUSDe < lastAssetValueInUSDe) {
-            totalUnclaimedYieldInUSDe = 0;
-        } else {
-            uint256 yield = currentAssetValueInUSDe - lastAssetValueInUSDe;
-            totalUnclaimedYieldInUSDe += yield;
+        uint256 yield = currentAssetValueInUSDe > lastAssetValueInUSDe
+            ? currentAssetValueInUSDe - lastAssetValueInUSDe
+            : 0;
 
-            _mint(address(this), _calculateShares(yield));
-            emit YieldUpdated(
-                sUSDe.previewRedeem(sUSDe.balanceOf(address(this))),
-                yield
-            );
-        }
-    }
+        totalUnclaimedYieldInUSDe += yield;
 
-    function _calculateShares(uint256 amount) internal view returns (uint256) {
+        uint256 shares;
         if (totalSupply() == 0) {
-            return amount;
+            shares = yield;
         } else {
-            return (amount * totalSupply()) / lastAssetValueInUSDe;
+            shares = (yield * totalSupply()) / lastAssetValueInUSDe;
         }
+
+        _mint(address(this), shares);
+        emit YieldAccrued(currentAssetValueInUSDe, yield);
+        lastAssetValueInUSDe = currentAssetValueInUSDe;
     }
 }

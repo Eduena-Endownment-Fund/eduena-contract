@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../src/Eduena.sol";
 import "../src/interfaces/ISUSDe.sol";
-import "../src/mocks/MockUSDe.sol";
-import "../src/mocks/MockSUSDe.sol";
 
 contract EduenaTest is Test {
     IERC20 usde;
@@ -24,71 +22,107 @@ contract EduenaTest is Test {
         eduena = new Eduena(address(usde), address(susde));
     }
 
-    function testDeposit() public {
-        address user = address(0x123);
-        uint256 amount = 1000;
+    function testDepositAndWithdraw() public {
+        //Setup initial user and deposit
+        address[] memory users = new address[](3);
+        users[0] = address(0x123);
+        users[1] = address(0x456);
+        users[2] = address(0x789);
+        uint256 amount = 100000 ether;
 
-        deal(address(usde), user, amount);
-        vm.startPrank(user);
-        usde.approve(address(eduena), amount);
-        eduena.deposit(amount);
-        vm.stopPrank();
+        //Deposit and stake for each user
+        for (uint256 i = 0; i < users.length; i++) {
+            deal(address(usde), users[i], amount);
+            vm.startPrank(users[i]);
+            usde.approve(address(eduena), amount);
+            eduena.deposit(amount);
+            vm.stopPrank();
+        }
 
-        uint256 finalSusdeBalance = susde.balanceOf(address(eduena));
-
+        //Ensure all usde is staked to susde
         assertEq(usde.balanceOf(address(eduena)), 0);
-        assertEq(usde.balanceOf(user), 0);
-        assertEq(finalSusdeBalance, susde.previewDeposit(amount));
-        assertEq(eduena.totalSupply(), amount);
+
+        //Withdraw all funds
+        for (uint256 i = 0; i < users.length; i++) {
+            vm.startPrank(users[i]);
+            eduena.withdraw(eduena.balanceOf(users[i]));
+            vm.stopPrank();
+            assertEq(eduena.balanceOf(users[i]), 0);
+            assertEq(usde.balanceOf(users[i]), 0);
+        }
+
+        //Distribute any remaining yield
+        address recipient = address(0x111);
+        vm.startPrank(recipient);
+        eduena.distribute(recipient, eduena.totalUnclaimedYieldInUSDe());
+        vm.stopPrank();
+
+        //Ensure all funds are withdrawn
+        assertEq(eduena.totalSupply(), 0);
         assertEq(eduena.totalUnclaimedYieldInUSDe(), 0);
-
-        amount = 1000;
-
-        deal(address(usde), user, amount);
-        vm.startPrank(user);
-        usde.approve(address(eduena), amount);
-        eduena.deposit(amount);
-        vm.stopPrank();
-
-
-        console.log(susde.previewRedeem(1000), susde.totalAssets());
-
-        address rewarder = address(0x456);
-        deal(address(usde), rewarder, 10000 ether);
-        vm.startPrank(rewarder);
-        usde.transfer(susdeAddress, 10000 ether);
-        vm.stopPrank();
-
-
-        console.log(susde.previewRedeem(1000), susde.totalAssets());
-
-        amount = 1000;
-
-        deal(address(usde), user, amount);
-        vm.startPrank(user);
-        usde.approve(address(eduena), amount);
-        eduena.deposit(amount);
-        vm.stopPrank();
+        assertEq(susde.balanceOf(address(eduena)), 0);
     }
 
-    function testWithdraw() public {
+    function testAccrueYield() public {
+        // Setup initial user and deposit
         address user = address(0x123);
-        uint256 depositAmount = 1000;
-        uint256 withdrawAmount = 1000;
-
-        deal(address(usde), user, depositAmount);
+        uint256 amount = 100000 ether;
+        deal(address(usde), user, amount);
         vm.startPrank(user);
-        usde.approve(address(eduena), depositAmount);
-        eduena.deposit(depositAmount);
+        usde.approve(address(eduena), amount);
+        eduena.deposit(amount);
         vm.stopPrank();
 
-        vm.startPrank(user);
-        eduena.withdraw(withdrawAmount);
+        // Rewarder deposits yield
+        address rewarder = address(0x456);
+        deal(address(usde), rewarder, 300_000_000 ether);
+        vm.startPrank(rewarder);
+        usde.transfer(susdeAddress, 300_000_000 ether);
         vm.stopPrank();
 
-        assertEq(usde.balanceOf(user), 0);
+        // Setup second user and deposit
+        address user2 = address(0x456);
+        deal(address(usde), user2, amount);
+        vm.startPrank(user2);
+        usde.approve(address(eduena), amount);
+        eduena.deposit(amount);
+        vm.stopPrank();
+
+        // Rewarder deposits more yield
+        deal(address(usde), rewarder, 300_000_000 ether);
+        vm.startPrank(rewarder);
+        usde.transfer(susdeAddress, 300_000_000 ether);
+        vm.stopPrank();
+
+        // Setup third user and deposit
+        address user3 = address(0x789);
+        deal(address(usde), user3, amount);
+        vm.startPrank(user3);
+        usde.approve(address(eduena), amount);
+        eduena.deposit(amount);
+        vm.stopPrank();
+
+        // Withdraw all funds for each user
+        address[] memory users = new address[](3);
+        users[0] = user;
+        users[1] = user2;
+        users[2] = user3;
+
+        for (uint256 i = 0; i < users.length; i++) {
+            vm.startPrank(users[i]);
+            eduena.withdraw(eduena.balanceOf(users[i]));
+            assertEq(eduena.balanceOf(users[i]), 0);
+            vm.stopPrank();
+        }
+
+        //Distribute any remaining yield
+        address recipient = address(0x111);
+        vm.startPrank(recipient);
+        eduena.distribute(recipient, eduena.totalUnclaimedYieldInUSDe());
+        vm.stopPrank();
+
+        // Ensure all funds are withdrawn
         assertEq(eduena.totalSupply(), 0);
         assertEq(susde.balanceOf(address(eduena)), 0);
-        assertEq(susde.balanceOf(user), 896);
     }
 }
