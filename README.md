@@ -62,44 +62,47 @@ forge test
 
 The Eduena contract is deployed on [Tenderly](https://tenderly.co/) for testing purposes.
 
-```
-echo "
-unknown_chain = { key = \"${TENDERLY_ACCESS_KEY}\", chain = 1, url = \"$TENDERLY_RPC_URL\" }" >> foundry.toml
+#### Fund account
 
-forge create Eduena \
---private-key $PRIVATE_KEY \
---rpc-url $TENDERLY_RPC_URL \
---etherscan-api-key $TENDERLY_ACCESS_KEY \
---verify \
---verifier-url $TENDERLY_RPC_URL/verify/etherscan \
---constructor-args 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497
-```
-
-Fund account for gas fee
+Fund VETH for gas fee:
 
 ```
-curl "$TENDERLY_RPC_URL" \
--X POST \
--H "Content-Type: application/json" \
--d '{
-    "jsonrpc": "2.0",
-    "method": "tenderly_setBalance",
-    "params": [["0xE58b9ee93700A616b50509C8292977FA7a0f8ce1"], "0xDE0B6B3A7640000"]
+curl --location 'https://virtual.mainnet.rpc.tenderly.co/fad38b2e-0b26-4b16-b2c3-c24ac629af36' \
+--header 'Content-Type: application/json' \
+--data '{
+  "jsonrpc": "2.0",
+  "method": "tenderly_setBalance",
+  "params": [["USER_WALLET_ADDRESS"], "0x152d02c7e14af6000000"]
 }'
 ```
 
 Fund your account with USDe for testing Eduena deposits. The first parameter is the USDe contract address, the second parameter is your wallet address, and the third parameter is a 32-byte hash representing the token amount in wei. The example below sets a balance of $100,000 USDe to the user's address.
 
 ```
-curl --location '${TENDERLY_RPC_URL}' \
+curl --location 'https://virtual.mainnet.rpc.tenderly.co/fad38b2e-0b26-4b16-b2c3-c24ac629af36' \
 --header 'Content-Type: application/json' \
 --data '{
     "jsonrpc": "2.0",
     "method": "tenderly_setErc20Balance",
     "params": [
         "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3",
-        "{{$USER_WALLET_ADDRESS}}",
+        "USER_WALLET_ADDRESS",
         "0x152d02c7e14af6000000"
     ]
 }'
+```
+
+#### Deploy smart contract
+
+```
+echo "
+unknown_chain = { key = \"${TENDERLY_ACCESS_KEY}\", chain = 1, url = \"https://virtual.mainnet.rpc.tenderly.co/fad38b2e-0b26-4b16-b2c3-c24ac629af36\" }" >> foundry.toml
+
+forge create Eduena \
+--private-key $PRIVATE_KEY \
+--rpc-url https://virtual.mainnet.rpc.tenderly.co/fad38b2e-0b26-4b16-b2c3-c24ac629af36 \
+--etherscan-api-key $TENDERLY_ACCESS_KEY \
+--verify \
+--verifier-url https://virtual.mainnet.rpc.tenderly.co/fad38b2e-0b26-4b16-b2c3-c24ac629af36/verify/etherscan \
+--constructor-args 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497
 ```
